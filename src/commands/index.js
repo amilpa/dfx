@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import dotenv from "dotenv";
+import { exec } from "child_process";
 import {
   getCommitHistory,
   getCommitDiff,
@@ -107,8 +108,6 @@ const selectCommitDiff = async () => {
     // Get commit history
     const commits = getCommitHistory(20);
 
-    // added new comment for testing
-
     if (!commits.length) {
       console.log(chalk.yellow("No commits found in this repository."));
       return;
@@ -153,15 +152,43 @@ const selectCommitDiff = async () => {
         name: "action",
         message: "What would you like to do?",
         choices: [
+          { name: "Copy diff to clipboard", value: "copy" },
           { name: "Select another commit", value: "another" },
           { name: "Exit", value: "exit" },
         ],
       },
     ]);
 
-    if (action === "another") {
+    if (action === "copy") {
+      try {
+        await copyToClipboard(diff);
+        console.log(chalk.green("Diff copied to clipboard successfully!"));
+
+        // Ask what to do next after copying
+        const { nextAction } = await inquirer.prompt([
+          {
+            type: "list",
+            name: "nextAction",
+            message: "What would you like to do now?",
+            choices: [
+              { name: "Select another commit", value: "another" },
+              { name: "Exit", value: "exit" },
+            ],
+          },
+        ]);
+
+        if (nextAction === "another") {
+          return selectCommitDiff();
+        }
+        // If "exit" is selected, the function will simply return
+      } catch (error) {
+        console.error(
+          chalk.red(`Error copying to clipboard: ${error.message}`)
+        );
+      }
+    } else if (action === "another") {
       // Restart the commit selection process
-      await selectCommitDiff();
+      return selectCommitDiff();
     }
     // If "exit" is selected, the function will simply return
   } catch (error) {
@@ -261,6 +288,46 @@ function trimDiff(diff) {
 
   // Deduplicate lines
   return [...new Set(result)].join("\n");
+}
+
+/**
+ * Helper function to copy text to clipboard using system commands
+ * @param {string} text - The text to copy to clipboard
+ * @returns {Promise<void>}
+ */
+function copyToClipboard(text) {
+  return new Promise((resolve, reject) => {
+    // Create a temporary file with the content
+    const tempFile = path.join(os.tmpdir(), `diff-${Date.now()}.txt`);
+    fs.writeFileSync(tempFile, text);
+
+    let command;
+    if (process.platform === "win32") {
+      // Windows
+      command = `type "${tempFile}" | clip`;
+    } else if (process.platform === "darwin") {
+      // macOS
+      command = `cat "${tempFile}" | pbcopy`;
+    } else {
+      // Linux (requires xclip or xsel)
+      command = `cat "${tempFile}" | xclip -selection clipboard || cat "${tempFile}" | xsel -i -b`;
+    }
+
+    exec(command, (error) => {
+      // Clean up the temporary file
+      try {
+        fs.unlinkSync(tempFile);
+      } catch (err) {
+        // Ignore cleanup errors
+      }
+
+      if (error) {
+        reject(new Error(`Failed to copy to clipboard: ${error.message}`));
+      } else {
+        resolve();
+      }
+    });
+  });
 }
 
 export { selectCommitDiff, setupGroqApiKey };
