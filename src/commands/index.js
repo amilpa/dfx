@@ -23,6 +23,8 @@ const selectCommitDiff = async () => {
     // Get commit history
     const commits = getCommitHistory(20);
 
+    // added new comment for testing
+
     if (!commits.length) {
       console.log(chalk.yellow("No commits found in this repository."));
       return;
