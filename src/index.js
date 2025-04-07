@@ -20,7 +20,7 @@ const run = (argv) => {
     });
 
   program
-    .command("git-diff")
+    .command("activate")
     .description("Select a commit and view its diff")
     .action(selectCommitDiff);
 
