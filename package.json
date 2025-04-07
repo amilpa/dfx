@@ -1,0 +1,21 @@
+{
+  "name": "dfx",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "bin": {
+    "dfx": "./bin/dfx.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./bin/dfx.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "A command-line interface tool for various tasks.",
+  "type": "module",
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "inquirer": "^12.5.2"
+  }
+}
